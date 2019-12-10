@@ -1,22 +1,26 @@
 # Smart Django Models
 
 
-[django-smart-models](https://github.com/techoutlooks/django-smart-models)
+[django-smartmodels](https://github.com/techoutlooks/django-smartmodels)
 
 API for building multi-tenant Django applications, with the unique features :
 1) Tracking, recording and reverting CRUD changes made on models
-2) Shared objects management, where resources (Django models) belong to namespaces  (org, domain, etc.),
-   instead of users. The resources are only visible to the users added to a namespace
+2) Shared objects management, where resources (Django models) belong to namespaces (org, domain, etc.),
+   but "owned" temporarily by users. Resources are only visible users added to a namespace.
 
 ### Features
 
 django-smart-models aims to provide the following features readily available :
-- Customizable Model, CBV and RESTful APIs as a single codebase,
+- Customizable Model, CBV and RESTful (DRF) APIs implementing common patterns (mixins).
+- LoopbackJS-style search supported by the REST API based on `django-rest-framework-loopback-js-filters`.
 - Don't truly delete any model instance but just mark it so. Ownership of pseudo-deleted instances is transferred
   to the `sentinel` user. Overrides the default manager to filter out deleted instances.
 - Track CRUD operations on model instances: owner, timestamps, statistics, etc.
 - Has builtin most of the  defaults to auto-configure the Django settings.
 - Swappable `Namespace` model.
+- Writable nested model serialization feature as a DRF-based mixin, 
+  that performs out of the same data, CRUD operations on nested fields at once.
+
 
 ### Rationale
 
@@ -38,17 +42,62 @@ have a viewing scope (hidden or not to users), that is the meaning assumed by de
 available in every SharedResource instance. Hence, the resource's visibility can be modified dynamically.
 
 In private operation, a single user owns all resources (proprietorship).
-Although it is originally meant for the smart_models app to function in shared mode, where the
+Although it is originally meant for the smartmodels app to function in shared mode, where the
 `namespaces` field on resources scopes their visibility, proprietorship of resources is emulated by setting
-at least the following in Django settings: `SMART_MODELS_OWNER_MODEL = AUTH_USER_MODEL`.
+at least the following in Django settings: `SMARTMODELS_OWNER_MODEL = AUTH_USER_MODEL`.
 
-### Install
+### Requirements
 
-```bash
-pip install -e git+https://github.com/techoutlooks/django-smart-models#egg=smart_models
-```
+    Python 3+, Django 2.2+
+    djangorestframework, django-cors-headers, django-rest-framework-loopback-js-filters
+
+### Setup
+
+Install django-smartmodels inside a virtual env.
+
+    pip3 install -U virtualenv
+    virtualenv -p /usr/bin/python3 venv
+    source venv/bin/activate
+    pip install -e git+https://github.com/techoutlooks/django-smartmodels.git#egg=smartmodels
+    
+Setup rest_framework authentication scheme. 
+Eg. with DOT aka [django-oauth-toolkit](https://github.com/jazzband/django-oauth-toolkit.git)',
+
+- add DOT to DRF authentication classes in settings.py like so,
+
+        REST_FRAMEWORK = { 
+            'DEFAULT_AUTHENTICATION_CLASSES': (
+                'oauth2_provider.ext.rest_framework.OAuth2Authentication', 
+            ), 
+        } 
+
+- Add DOT to your urls.py
+
+        urlpatterns = patterns('',
+            url(r'^admin/', include(admin.site.urls)),
+            
+            # your rest_framework generic endpoints
+            url(r'^', include(router.urls)),
+
+            # DOT standard views
+            url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
+        )
+
+Bootstrap the demo project
+
+    cd demo
+    python manage.py migrate
+    python manage.py runserver
+
 
 ### TODO
 - Model usage stats
 - Namespace API key
-- Rollback value changes in models
+- Rollback models changes
+- Namespace creation allowed for staff/admin alone.
+
+
+### Docs
+
+[DOT & DRF integration](https://yeti.co/blog/oauth2-with-django-rest-framework/)
+
