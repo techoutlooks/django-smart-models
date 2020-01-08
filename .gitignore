@@ -3,3 +3,5 @@ venv/
 dist/
 *.pyc
 *~
+db.sqlite3
+**/migrations

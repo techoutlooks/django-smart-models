@@ -22,6 +22,6 @@ setuptools.setup(
         "django-rest-framework-loopback-js-filters>=1.1.4",
         "numpy>=1.17.4",
         "django-pandas>=0.6.1",
-        "rest-pandas>1.1.0"
+        "rest-pandas>=1.1.0"
     ]
 )

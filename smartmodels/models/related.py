@@ -15,19 +15,19 @@ from django.db.models import Q
 
 class ModelFactoryMixin(object):
     """
-    Convenience method for working with fields and values of the current model
+    Convenience methods for working with fields and values of this model
     """
 
     @classmethod
-    def parse_model_data(cls, exclude=[], **kwargs):
+    def parse_model_data(cls, exclude=[], **data):
         """
         Filter out any data that do not belong to this model,
         or set explicitly for excluding
         """
-        for prop in kwargs.keys():
+        for prop in data.keys():
             if prop not in [f.name for f in cls._meta.fields] or prop in exclude:
-                kwargs.pop(prop)
-        return kwargs
+                data.pop(prop)
+        return data
 
     @classmethod
     def get_related_managers(cls):
@@ -37,7 +37,7 @@ class ModelFactoryMixin(object):
 
 class ForeignModelFactoryMixin(ModelFactoryMixin):
     """
-    Convenience methods for working with related (foreign) models from this model.
+    Convenience methods for working with related (foreign) models that relate to this model.
     Currently only supports subclasses of ForeignKey (eg. ForeignKey, OneToOneField).
     """
 

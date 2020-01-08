@@ -56,8 +56,7 @@ class ResourceViewMixin(SmartViewMixin):
 
 class OwnResourceViewMixin(ResourceViewMixin):
     """
-    Restrict the objects worked upon to the set belonging to all the domains (namespaces)
-    the currently logged in owner is subscribed to.
+    Restrict the objects worked upon to the set belonging to the currently logged in user.
 
     In case of multiple inheritance, always place on the left-most side, to ensure
     object from the right scope as available.
@@ -75,6 +74,29 @@ class OwnResourceViewMixin(ResourceViewMixin):
           """
         qs = super(OwnResourceViewMixin, self).get_queryset()
         return qs.filter(owner=self.request.user)
+
+
+class NamespaceResourceViewMixin(ResourceViewMixin):
+    """
+    Restrict the objects worked upon to the set belonging to all the domains (namespaces)
+    the currently logged in owner is subscribed to. That does not apply to superusers.
+
+    In case of multiple inheritance, always place on the left-most side, to ensure
+    object from the right scope as available.
+     Eg.
+     `
+        class AccountEndpoint(OwnResourceViewMixin, SmartViewSet):
+            pass
+     `
+    """
+    def get_queryset(self):
+        user = self.request.user
+        qs = super(NamespaceResourceViewMixin, self).get_queryset()
+        user_resources = Q(namespaces__users__in=[user])
+
+        if not user.is_superuser:
+            qs = qs.filter(user_resources).distinct()
+        return qs
 
 
 class SmartSearchViewSetMixin(object):

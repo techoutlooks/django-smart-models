@@ -6,6 +6,7 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from smartmodels.drf.views.bulk import BulkModelViewSet
 from smartmodels.helpers import Action
 from smartmodels.mixins import OwnResourceViewMixin, SmartViewMixin, ResourceViewMixin
+from smartmodels.mixins.views import NamespaceResourceViewMixin
 from smartmodels.settings import get_setting
 from smartmodels.drf.serializers import NamespaceSerializer, OwnerSerializer, ResourceSerializer
 
@@ -64,6 +65,14 @@ class ResourceViewSet(ResourceViewMixin, SmartViewSet):
 
 
 class OwnResourceViewSet(OwnResourceViewMixin, ResourceViewSet):
+    """
+    SmartViewSet that displays the subset of resources from the current namespace's resources
+    the currently logged in user is subscribed to.
+    """
+    pass
+
+
+class NamespaceResourceViewSet(NamespaceResourceViewMixin, ResourceViewSet):
     """
     SmartViewSet that displays the subset of resources of the current namespace's resources
     the currently logged in user is subscribed to.

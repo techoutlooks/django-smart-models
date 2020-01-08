@@ -86,8 +86,19 @@ def get_namespace_model():
         )
 
 
+def get_namespaces_manager_name():
+    """
+    Name (string) of manager of Namespace instances on Resource objects.
+    """
+    m = get_namespace_model()
+    return str(m._meta.verbose_name_plural)
+
+
+# TODO: define setting for publicly available namespaces
 class NameSpaceQuerySet(models.QuerySet):
-    def on(self):
+
+    # FIXME: redundant vs. `get_default_namespaces()`
+    def active(self):
         return self.exclude(**{
             get_setting('NAMESPACE_PK_FIELD'): get_setting('SENTINEL_UID'),
         })
@@ -95,7 +106,7 @@ class NameSpaceQuerySet(models.QuerySet):
 
 class NamespaceManager(models.Manager):
     def get_queryset(self):
-        return NameSpaceQuerySet(self.model, using=self._db).on()
+        return NameSpaceQuerySet(self.model, using=self._db).active()
 
 
 class AbstractNamespace(models.Model):
@@ -109,12 +120,13 @@ class AbstractNamespace(models.Model):
     """
 
     # TODO: Make the `name` field a configurable setting via custom metaclass
-    name = models.SlugField(
-        _("Namespace ID"),
+    slug = models.SlugField(
+        _("Unique ID"),
         default='',
         max_length=get_setting('NAMESPACE_MAX_LENGTH'),
-        help_text=_("Unique namespace ID. Configurable via the SMARTMODELS_OWNER_PK_FIELD setting."),
+        help_text=_("Unique ID for this namespace. Configurable via the SMARTMODELS_OWNER_PK_FIELD setting."),
         unique=True, blank=False, null=False, editable=True,
+        error_messages=dict(unique=_("This slug is not available"))
     )
     users = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -125,11 +137,14 @@ class AbstractNamespace(models.Model):
     objects = NamespaceManager()
     _objects = models.Manager()
 
+    def __str__(self):
+        return self.slug
+
     class Meta:
         abstract = True
 
     def clean(self):
-        self.name = slugify(self.name, allow_unicode=True)
+        self.slug = slugify(self.slug, allow_unicode=True)
 
 
 class Namespace(AbstractNamespace):
@@ -139,10 +154,9 @@ class Namespace(AbstractNamespace):
     whom have shared "ownership" of resources (ShareResource's).
     """
     def __str__(self):
-        return '%s' % self.name
+        return '%s' % self.slug
 
-    class Meta(AbstractNamespace.Meta):
-        abstract = False
+    class Meta:
         swappable = get_swappable_setting()
 
 
@@ -154,7 +168,7 @@ class Resource(SmartModel):
     """
     # defaults to `shared_model.Namespace` instances. cf. smartmodels.settings
     namespaces = models.ManyToManyField(
-        get_namespace_model(),
+        get_setting('NAMESPACE_MODEL'),
         related_name='%(class)ss_owned',
         help_text=_("Visibility domain: org, district, domain, etc.")
     )
@@ -175,14 +189,14 @@ def prepare_shared_smart_fields(sender, instance, **kwargs):
     (*) We'nt aware whether it's a update or create op!
           Which fields need persisting to db is left up to high level api.
     """
-
     if issubclass(sender, Resource):
+        namespaces = getattr(instance, get_namespaces_manager_name())
 
         # require the setting of all Resource fields by the api user
         # if requested so (`MODELS_DEFAULT_REQUIRED=True) otherwise,
         # use our own defaults presets.
         if get_setting('DEFAULT_REQUIRED'):
-            assert instance.namespaces, (
+            assert namespaces, (
                 '{model_class}(SmartModel) instance missing "namespaces" attribute.'
                 'To use the builtin defaults, set `SMARTMODELS_DEFAULT_REQUIRED=False`'
                 'in  Django settings'
@@ -190,13 +204,13 @@ def prepare_shared_smart_fields(sender, instance, **kwargs):
                     model_class=instance.__class__.__name__
                 )
             )
-            assert instance.namespaces.exists(), (
+            assert namespaces.exists(), (
                 'The `namespaces` smart model field mustn\'t be empty since SMARTMODELS_DEFAULT_REQUIRED=True". '
                 'Please supply  some {model_class} instances.'
                 'To use the builtin defaults, set `SMARTMODELS_DEFAULT_REQUIRED=False`'
                 'in  Django settings'
                 .format(
-                    model_class=type(instance.namespaces).__name__
+                    model_class=type(namespaces).__name__
                 )
             )
 
@@ -213,11 +227,14 @@ def prepare_shared_smart_m2m_fields(sender, **kwargs):
     instance = kwargs['instance']
     action = kwargs['action']
     if isinstance(instance, Resource):
+        namespaces_mgr_name = get_namespaces_manager_name()
+        namespaces = getattr(instance, namespaces_mgr_name)
         if action == 'post_add' or action == 'post_remove' or action == 'post_clear':
             for space in get_default_namespaces():
-                if space not in instance.namespaces.all():
+                if space not in namespaces.all():
                     # add the default namespace to this shared resource, without
                     # recursive `instance.namespaces.add(space)` call. would raise recursion error
-                    getattr(space, '%ss_owned' % instance._meta.model_name).add(instance)
+                    getattr(space, '%ss' % instance._meta.model_name).add(instance)
+
 
 

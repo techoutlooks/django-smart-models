@@ -8,7 +8,7 @@ def get_sentinel_user():
     Sentinel instance, of the AUTH_USER_MODEL model.
     """
 
-    # sentinel is hidden from the regular `objects` namager,
+    # sentinel is hidden from the regular `objects` manager,
     # use the default manager
     user, created = get_user_model()._objects.get_or_create(
         **{get_owner_pk_field(): get_setting('SENTINEL_UID')}
