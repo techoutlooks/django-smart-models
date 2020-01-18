@@ -1,27 +1,30 @@
-# Smart Django Models
-
-
+# Smart Django models able to support complex use-cases with little effort.
 [django-smartmodels](https://github.com/techoutlooks/django-smartmodels)
 
 API for building multi-tenant Django applications, with the unique features :
 1) Tracking, recording and reverting CRUD changes made on models
-2) Shared objects management, where resources (Django models) belong to namespaces (org, domain, etc.),
-   but "owned" temporarily by users. Resources are only visible users added to a namespace.
+2) Shared objects management, where resources (SmartModel subclasses) belong to namespaces (org, domain, etc.),
+   yet can be temporarily "owned" by users (survive user deletion). 
+   Resources inherit their creator's namespace; are only visible to users belonging to the namespace.
+3) Stats building using pandas, built in the smart models manager.
 
 ### Features
 
-django-smart-models aims to provide the following features readily available :
-- Customizable Model, CBV and RESTful (DRF) APIs implementing common patterns (mixins).
-- LoopbackJS-style search supported by the REST API based on `django-rest-framework-loopback-js-filters`.
+`django-smart-models` aims to provide the following features at the model level:
 - Don't truly delete any model instance but just mark it so. Ownership of pseudo-deleted instances is transferred
   to the `sentinel` user. Overrides the default manager to filter out deleted instances.
 - Track CRUD operations on model instances: owner, timestamps, statistics, etc.
 - Has builtin most of the  defaults to auto-configure the Django settings.
-- Swappable `Namespace` model.
+- Swappable `Namespace` model as the visibility domain of resources (eg. org).
+
+In addition:
+- Customizable Model, CBV and RESTful (DRF) APIs implementing common patterns (mixins).
+- LoopbackJS-style search supported by the REST API based on `django-rest-framework-loopback-js-filters`.
+- Bulk DRF API compatible with the smart models
 - Writable nested model serialization feature as a DRF-based mixin, 
   that performs out of the same data, CRUD operations on nested fields at once.
-
-
+- Support for pandas right in the smart objects manager
+  
 ### Rationale
 
 Make smart functionality builtin in models to provide features like:
@@ -30,6 +33,7 @@ Make smart functionality builtin in models to provide features like:
  2) Enable the soft deletion (and instant recovery) of model instances,
     continue to show the contributions made by a deleted user to some org.
  3) Tracking the usage of resources by users, etc.
+ 4) Rolling back user changes on models.
     
 ### Explanation
 
@@ -50,6 +54,7 @@ at least the following in Django settings: `SMARTMODELS_OWNER_MODEL = AUTH_USER_
 
     Python 3+, Django 2.2+
     djangorestframework, django-cors-headers, django-rest-framework-loopback-js-filters
+    django-pandas, rest-pandas
 
 ### Setup
 
@@ -89,15 +94,17 @@ Bootstrap the demo project
     python manage.py migrate
     python manage.py runserver
 
-
 ### TODO
+
 - Model usage stats
 - Namespace API key
 - Rollback models changes
 - Namespace creation allowed for staff/admin alone.
 
 
-### Docs
+### Thanks & credits
 
 [DOT & DRF integration](https://yeti.co/blog/oauth2-with-django-rest-framework/)
-
+[DRF LB filter backend](https://github.com/gerasev-kirill/django-rest-framework-loopback-js-filters)
+[Django Pandas](https://github.com/chrisdev/django-pandas)
+[DRF Pandas](https://github.com/wq/django-rest-pandas)

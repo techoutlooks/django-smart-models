@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from smartmodels.helpers import _make_smart_fields, _set_smart_fields
+from smartmodels.models.resource import get_namespaces_manager_name
 
 ALL_FIELDS = '__all__'
 
@@ -85,17 +86,17 @@ class NamespaceResourceViewMixin(ResourceViewMixin):
     object from the right scope as available.
      Eg.
      `
-        class AccountEndpoint(OwnResourceViewMixin, SmartViewSet):
+        class AccountEndpoint(NamespaceResourceViewMixin, SmartViewSet):
             pass
      `
     """
     def get_queryset(self):
         user = self.request.user
         qs = super(NamespaceResourceViewMixin, self).get_queryset()
-        user_resources = Q(namespaces__users__in=[user])
+        query = Q(**{'%s__users__in' % get_namespaces_manager_name(): [user.pk]})
 
         if not user.is_superuser:
-            qs = qs.filter(user_resources).distinct()
+            qs = qs.filter(query).distinct()
         return qs
 
 
@@ -165,5 +166,17 @@ class SmartSearchViewSetMixin(object):
         return Response(serializer.data)
 
 
-class SmartFilterViewSetMixin(object):
+class SmartFilterViewMixin(object):
+    """
+    Mixing for implementing a LoopbackJS-style filter backend
+    for generic api views (ie. GenericAPIView subclasses).
+    """
     filter_backends = [drf_loopback_js_filters.LoopbackJsFilterBackend]
+
+
+class ResourceFilterViewMixin(NamespaceResourceViewMixin, SmartFilterViewMixin):
+    """
+    Smart filter mixin that Restrict the objects worked upon to the set belonging
+    to all the domains (namespaces) the currently logged in owner is subscribed to.
+    """
+    pass

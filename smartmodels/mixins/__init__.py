@@ -1,4 +1,4 @@
 from .views import (
-    SmartViewMixin, SmartSearchViewSetMixin, SmartFilterViewSetMixin,
-    ResourceViewMixin, OwnResourceViewMixin
+    SmartViewMixin, SmartSearchViewSetMixin, SmartFilterViewMixin,
+    ResourceViewMixin, OwnResourceViewMixin, ResourceFilterViewMixin
 )
