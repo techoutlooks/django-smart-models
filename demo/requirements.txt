@@ -12,4 +12,4 @@ requests==2.22.0
 six==1.13.0
 -e git+https://github.com/techoutlooks/django-smart-models.git@2c6cf6a0e0f64c067db30853d6debb3cf4111bfe#egg=smartmodels
 sqlparse==0.3.0
-urllib3==1.25.7
+urllib3==1.25.8
